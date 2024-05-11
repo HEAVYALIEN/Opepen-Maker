@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #canvas,
+        #canvas1,
+        #canvas2,
+        #canvas3,
+        #bg-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 100%;
+            width: 600px;
+        }
+
+        #canvas {
+            z-index: 40;
+        }
+
+        #canvas1 {
+            z-index: 30;
+        }
+
+        #canvas2 {
+            z-index: 20;
+        }
+
+        #canvas3 {
+            z-index: 10;
+        }
+
+        #bg-canvas {
+            z-index: 0;
+            background-color: #272727;
+        }
+
+        .button-container {
+            position: absolute;
+            top: calc(50% + 350px);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            width: 400px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .randomize-button {
+            margin-bottom: 10px;
+            margin-right: 10px;
+            background-color: #f5f5f5;
+            border: none;
+            border-radius: 0px 30px 30px 30px;
+            padding: 15px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .randomize-button:hover {
+            background-color: #000000;
+        }
+
+        #btn-save {
+            margin-bottom: 10px;
+            margin-right: 10px;
+            background-color: #eb2a2a;
+            border: none;
+            border-radius: 0px 30px 30px 30px;
+            padding: 15px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #btn-save:hover {
+            background-color: #000000;
+        }
+
+        #shape1,
+        #shape2,
+        #shape3 {
+            border-radius: 30px;
+        }
+
+        #btn-bg {
+            border-radius: 0px;
+        }
+
+        #btn-save {
+            border-radius: 6px 0px 6px 0px;
+        }
+
+        body {
+            background-color: #333333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    <title>OPEPEN MAKER CC0</title>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="canvas" width="4000" height="4000"></canvas>
+        <canvas id="canvas1" width="4000" height="4000"></canvas>
+        <canvas id="canvas2" width="4000" height="4000"></canvas>
+        <canvas id="canvas3" width="4000" height="4000"></canvas>
+        <canvas id="bg-canvas" width="4000" height="4000"></canvas>
+    </div>
+    <div class="button-container">
+        <button class="randomize-button" id="shape1"></button>
+        <button class="randomize-button" id="shape2"></button>
+        <button class="randomize-button" id="shape3"></button>
+        <button class="randomize-button" id="btn-bg"></button>
+        <button class="randomize-button" id="randomize-button"></button>
+        <button class="randomize-button" id="btn-save"></button>
+    </div>
+    <script>
+        const canvas1 = document.getElementById("canvas1");
+        const ctx1 = canvas1.getContext("2d");
+        const canvas2 = document.getElementById("canvas2");
+        const ctx2 = canvas2.getContext("2d");
+        const canvas3 = document.getElementById("canvas3");
+        const ctx3 = canvas3.getContext("2d");
+        const bgCanvas = document.getElementById("bg-canvas");
+        const bgCtx = bgCanvas.getContext("2d");
+
+        const gridSize = 8;
+        const squareSize = 500;
+
+        const colors = [
+        ["#393534","#A95F4D","#7FB377","#68678A","#E8DFCE","#F2EBDD"]
+        ];
+
+        function getRandomColor(colors) {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // -- STROKE PROPERTIES
+        const strokeProperties = {
+            lineWidth: 25,
+            strokeStyle: "#393534",
+        };
+
+        // --- DRAW BACKGROUNDS
+        function drawBackground0(bgCtx, bgCanvas, colors) {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgCtx.fillStyle = getRandomColor(colors);
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+        }
+
+        /// --- SHAPE POSITIONS
+        const shapes1 = [
+            {
+                type: 'Eyes',
+                x: (gridSize / 2 - 1) * squareSize,
+                y: (gridSize / 2 - 1) * squareSize,
+                radius: 1 * squareSize,
+                width: squareSize * 2,
+                height: squareSize * 2,
+            }
+        ];
+
+        const shapes2 = [
+            {
+                type: 'Mouth',
+                x: (gridSize / 2 - 2) * squareSize,
+                y: (gridSize / 2) * squareSize,
+                radius: 1 * squareSize,
+                width: squareSize * 4,
+                height: squareSize * 2,
+            }
+        ];
+
+        const shapes3 = [
+            {
+                type: 'Body',
+                x: (gridSize / 2 - 2) * squareSize,
+                y: (gridSize - 1) * squareSize,
+                radius: 1 * squareSize,
+                width: squareSize * 4,
+                height: squareSize,
+            }
+        ];
+
+        const backgrounds = [
+            {
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                height: canvas.height
+            }
+        ];
+
+        /// --- SHAPE 1 FUNCTIONS
+        //Eye1 - Basic B/W
+        //Eye2 - Quad
+        //Eye3 - Geometric B/W
+        //Eye4 - Quad Geometric
+        //Eye5 - Same Random Color Geometric
+        //Eye6 - Same Random Color
+        //Eye7 - Original Opepen
+    
+        function drawEye1(ctx1, canvas1, shape, colors) {
+            const quadrantAngle = Math.PI / 2;
+            const rectWidth = shape.radius * 2;
+            const rectHeight = shape.radius;
+            const rectX = shape.x - rectWidth + rectWidth / 2;
+            const rectY = shape.y - shape.radius;
+            const cornerRadius = shape.radius;
+            const sameColor = getRandomColor(colors);
+
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+
+            //LEFT EYE - TOP
+            ctx1.beginPath();
+            ctx1.moveTo(rectX, rectY);
+            ctx1.lineTo(rectX + rectWidth - cornerRadius, rectY);
+            ctx1.arcTo(rectX + rectWidth, rectY, rectX + rectWidth, rectY + cornerRadius, cornerRadius);
+            ctx1.lineTo(rectX + rectWidth, rectY + rectHeight);
+            ctx1.lineTo(rectX, rectY + rectHeight);
+            ctx1.closePath();
+            ctx1.fillStyle = sameColor;
+            ctx1.fill();
+            ctx1.stroke();
+
+            //LEFT EYE - RIGHT QUADRANT
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = "#393534";
+            ctx1.fill();
+            ctx1.stroke();
+            
+            //LEFT EYE - LEFT QUADRANT
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = "#F2EBDD";
+            ctx1.fill();
+            ctx1.stroke();
+
+            //RIGHT EYE - TOP
+            ctx1.beginPath();
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, Math.PI, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = sameColor;
+            ctx1.fill();
+            ctx1.stroke();
+
+            //RIGHT EYE - RIGHT QUADRANT
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = "#393534";
+            ctx1.fill();
+            ctx1.stroke();
+
+            //RIGHT EYE - LEFT QUADRANT
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = "#F2EBDD";
+            ctx1.fill();
+            ctx1.stroke();
+        }
+
+        function drawEye2(ctx1, canvas1, shape, colors) {
+            const quadrantAngle = Math.PI / 2;
+
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            ctx1.fillStyle = getRandomColor(colors);
+            
+            ctx1.fillRect(shape.x - squareSize, shape.y - squareSize, squareSize, squareSize);
+            ctx1.strokeRect(shape.x - squareSize, shape.y - squareSize, squareSize, squareSize);
+            
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, - Math.PI / 2, 0, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+
+            // RIGHT EYE
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, - Math.PI / 2, Math.PI, true);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+           
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x+ squareSize * 2, shape.y);
+            ctx1.arc(shape.x+ squareSize * 2, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, - Math.PI / 2, 0, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+        }
+
+        function drawEye3(ctx1, canvas1, shape, colors) {
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            const sameColor = getRandomColor(colors);
+
+            ctx1.fillStyle = sameColor;
+            ctx1.fillRect(shape.x - squareSize, shape.y - squareSize, squareSize * 4, squareSize);
+            
+            ctx1.strokeRect(shape.x - squareSize, shape.y - squareSize, squareSize * 4, squareSize);
+
+            ctx1.fillStyle = "#393534";
+            ctx1.fillRect(shape.x, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = "#F2EBDD";
+            ctx1.fillRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+
+            //RIGHT EYE
+            ctx1.fillStyle = "#393534";
+            ctx1.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = "#F2EBDD";
+            ctx1.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+        }
+
+        function drawEye4(ctx1, canvas1, shape, colors) {
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            const sameColor = getRandomColor(colors);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x - squareSize, shape.y - squareSize, squareSize, squareSize);
+            ctx1.strokeRect(shape.x - squareSize, shape.y - squareSize, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x, shape.y - squareSize, squareSize, squareSize);
+            ctx1.strokeRect(shape.x, shape.y - squareSize, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x, shape.y, squareSize, squareSize);
+
+            //RIGHT EYE
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x + squareSize, shape.y - squareSize, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize, shape.y - squareSize, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x + squareSize * 2, shape.y - squareSize, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize * 2, shape.y - squareSize, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+        }
+
+        function drawEye5(ctx1, canvas1, shape, colors) {
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            const sameColor0 = getRandomColor(colors);
+            const sameColor1 = getRandomColor(colors);
+            const sameColor2 = getRandomColor(colors);
+
+            ctx1.fillStyle = sameColor0;
+            ctx1.fillRect(shape.x - squareSize, shape.y - squareSize, squareSize * 2, squareSize);
+            
+            ctx1.strokeRect(shape.x - squareSize, shape.y - squareSize, squareSize * 2, squareSize);
+
+            ctx1.fillStyle =sameColor1;
+            ctx1.fillRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x - squareSize, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = sameColor2;
+            ctx1.fillRect(shape.x, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x, shape.y, squareSize, squareSize);
+
+            //RIGHT EYE
+            ctx1.fillStyle = sameColor0;
+            ctx1.fillRect(shape.x + squareSize, shape.y - squareSize, squareSize * 2, squareSize);
+            
+            ctx1.strokeRect(shape.x + squareSize, shape.y - squareSize, squareSize * 2, squareSize);
+
+            ctx1.fillStyle = sameColor1;
+            ctx1.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+
+            ctx1.fillStyle = sameColor2;
+            ctx1.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx1.strokeRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+        }
+
+        function drawEye6(ctx1, canvas1, shape, colors) {
+            const quadrantAngle = Math.PI / 2;
+            const rectWidth = shape.radius * 2;
+            const rectHeight = shape.radius;
+            const rectX = shape.x - rectWidth + rectWidth / 2;
+            const rectY = shape.y - shape.radius;
+            const cornerRadius = shape.radius;
+            const sameColor0 = getRandomColor(colors);
+            const sameColor1 = getRandomColor(colors);
+            const sameColor2 = getRandomColor(colors);
+
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+
+            ctx1.beginPath();
+            ctx1.moveTo(rectX, rectY);
+            ctx1.lineTo(rectX + rectWidth - cornerRadius, rectY);
+            ctx1.arcTo(rectX + rectWidth, rectY, rectX + rectWidth, rectY + cornerRadius, cornerRadius);
+            ctx1.lineTo(rectX + rectWidth, rectY + rectHeight);
+            ctx1.lineTo(rectX, rectY + rectHeight);
+            ctx1.closePath();
+
+            ctx1.fillStyle = sameColor0;
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+
+            ctx1.fillStyle = sameColor1;
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x, shape.y);
+            ctx1.arc(shape.x, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+
+            ctx1.fillStyle = sameColor2;
+            ctx1.fill();
+            ctx1.stroke();
+
+            // RIGHT EYE
+
+            ctx1.beginPath();
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, Math.PI, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = sameColor0;
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, 0, quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = sameColor1;
+            ctx1.fill();
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.moveTo(shape.x + squareSize * 2, shape.y);
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, quadrantAngle, 2 * quadrantAngle);
+            ctx1.closePath();
+            ctx1.fillStyle = sameColor2;
+            ctx1.fill();
+            ctx1.stroke();
+        }
+
+        function drawEye7(ctx1, canvas1, shape, colors) {
+            ctx1.beginPath();
+            ctx1.arc(shape.x - squareSize * 0.5, shape.y - squareSize * 0.5, shape.radius / 2, 0, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.arc(shape.x - squareSize * 0.5, shape.y + squareSize * 0.5, shape.radius / 2, 0, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.arc(shape.x + squareSize * 0.5, shape.y - squareSize * 0.5, shape.radius / 2, 0, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            ctx1.stroke();
+
+            ctx1.beginPath();
+            ctx1.arc(shape.x + squareSize * 0.5, shape.y + squareSize * 0.5, shape.radius / 2, 0, 2 * Math.PI, false);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.lineWidth = strokeProperties.lineWidth;
+            ctx1.strokeStyle = strokeProperties.strokeStyle;
+            ctx1.stroke();
+            
+            // RIGHT EYE
+
+            ctx1.beginPath();
+            ctx1.arc(shape.x + squareSize * 2, shape.y, shape.radius, 0, 2 * Math.PI, true);
+            ctx1.closePath();
+            ctx1.fillStyle = getRandomColor(colors);
+            ctx1.fill();
+            ctx1.stroke();
+        }
+
+        /// --- SHAPE 2 FUNCTIONS
+        //Mouth1 - Rounded Bottom 2
+        //Mouth2 - Rounded Bottom 8
+        //Mouth3 - Rounded Bottom 4
+        //Mouth4 - Rectangles 2
+        //Mouth5 - Rectangles 4
+        //Mouth6 - Rectangles 8
+
+        function drawMouth1(ctx2, canvas2, shape, colors) {
+            const bottomCornerRadius = shape.height / 2;
+            const sameColor = getRandomColor(colors);
+            ctx2.beginPath();
+            ctx2.moveTo(shape.x + bottomCornerRadius, shape.y + shape.height);
+            ctx2.lineTo(shape.x + shape.width - bottomCornerRadius, shape.y + shape.height);
+            ctx2.arcTo(shape.x + shape.width, shape.y + shape.height, shape.x + shape.width, shape.y, bottomCornerRadius);
+            ctx2.lineTo(shape.x + shape.width, shape.y);
+            ctx2.lineTo(shape.x, shape.y);
+            ctx2.arcTo(shape.x, shape.y + shape.height, shape.x + bottomCornerRadius, shape.y + shape.height, bottomCornerRadius);
+            ctx2.closePath();
+            ctx2.fillStyle = sameColor;
+            ctx2.fill();
+
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.stroke();
+
+            ctx2.fillStyle = sameColor;
+            ctx2.fillRect(shape.x, shape.y, shape.width, shape.height / 2);
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.strokeRect(shape.x, shape.y, shape.width, shape.height / 2);
+        }
+
+        function drawMouth2(ctx2, canvas2, shape, colors) {
+            const squareSize = shape.width / 4;
+            for (let i = 0; i < 4; i++) {
+                const squareX = shape.x + i * squareSize;
+                const squareY = shape.y;
+
+                if (i === 0) {
+                    ctx2.beginPath();
+                    ctx2.moveTo(squareX + squareSize, squareY);
+                    ctx2.lineTo(squareX + squareSize, squareY + shape.height);
+                    ctx2.arcTo(squareX, squareY + shape.height, squareX, squareY + shape.height - squareSize / 2, squareSize);
+                    ctx2.lineTo(squareX, squareY);
+                    ctx2.closePath();
+                    ctx2.fillStyle = getRandomColor(colors);
+                    ctx2.fill();
+                } else if (i === 3) {
+                    ctx2.beginPath();
+                    ctx2.moveTo(squareX, squareY);
+                    ctx2.lineTo(squareX + squareSize, squareY);
+                    ctx2.arcTo(squareX + squareSize, squareY + shape.height, squareX, squareY + shape.height, squareSize);
+                    ctx2.lineTo(squareX, squareY + shape.height);
+                    ctx2.closePath();
+                    ctx2.fillStyle = getRandomColor(colors);
+                    ctx2.fill();
+                } else {
+                    ctx2.beginPath();
+                    ctx2.moveTo(squareX, squareY);
+                    ctx2.lineTo(squareX + squareSize, squareY);
+                    ctx2.lineTo(squareX + squareSize, squareY + shape.height);
+                    ctx2.lineTo(squareX, squareY + shape.height);
+                    ctx2.closePath();
+                    ctx2.fillStyle = getRandomColor(colors);
+                    ctx2.fill();
+                }
+                ctx2.lineWidth = strokeProperties.lineWidth;
+                ctx2.strokeStyle = strokeProperties.strokeStyle;
+                ctx2.stroke();
+            }
+
+            for (let i = 0; i < 4; i++) {
+                const squareX = shape.x + i * squareSize;
+                ctx2.fillStyle = getRandomColor(colors);
+                ctx2.fillRect(squareX, shape.y, squareSize, squareSize);
+                ctx2.lineWidth = strokeProperties.lineWidth;
+                ctx2.strokeStyle = strokeProperties.strokeStyle;
+                ctx2.strokeRect(squareX, shape.y, squareSize, squareSize);
+            }
+        }
+
+        function drawMouth3(ctx2, canvas2, shape, colors) {
+            const sameColor = getRandomColor(colors);
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.fillStyle = sameColor;
+            ctx2.fillRect(shape.x, shape.y, squareSize * 4, squareSize);
+            ctx2.strokeRect(shape.x, shape.y, squareSize * 4, squareSize);
+
+            ctx2.fillStyle = sameColor;
+            ctx2.fillRect(shape.x, shape.y + squareSize, squareSize * 4, squareSize);
+            ctx2.strokeRect(shape.x, shape.y + squareSize, squareSize * 4, squareSize);
+        }
+        
+        function drawMouth4(ctx2, canvas2, shape, colors) {
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y, squareSize * 4, squareSize);
+            ctx2.strokeRect(shape.x, shape.y, squareSize * 4, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y + squareSize, squareSize * 4, squareSize);
+            ctx2.strokeRect(shape.x, shape.y + squareSize, squareSize * 4, squareSize);
+        }
+
+        function drawMouth5(ctx2, canvas2, shape, colors) {
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y, squareSize * 2, squareSize);
+            ctx2.strokeRect(shape.x, shape.y, squareSize * 2, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y + squareSize, squareSize * 2, squareSize);
+            ctx2.strokeRect(shape.x, shape.y + squareSize, squareSize * 2, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 2, shape.y, squareSize * 2, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 2, shape.y, squareSize * 2, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 2, shape.y + squareSize, squareSize * 2, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 2, shape.y + squareSize, squareSize * 2, squareSize);
+        }
+
+        function drawMouth6(ctx2, canvas2, shape, colors) {
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y, squareSize, squareSize);
+            ctx2.strokeRect(shape.x, shape.y, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x, shape.y + squareSize, squareSize, squareSize);
+            ctx2.strokeRect(shape.x, shape.y + squareSize, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize, shape.y + squareSize, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize, shape.y + squareSize, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 2, shape.y + squareSize, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 2, shape.y + squareSize, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 3, shape.y, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 3, shape.y, squareSize, squareSize);
+
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fillRect(shape.x + squareSize * 3, shape.y + squareSize, squareSize, squareSize);
+            ctx2.strokeRect(shape.x + squareSize * 3, shape.y + squareSize, squareSize, squareSize);
+        }
+
+        function drawMouth7(ctx2, canvas2, shape, colors) {
+            ctx2.beginPath();
+            ctx2.arc(shape.x + squareSize, shape.y + squareSize, shape.radius, 0, 2 * Math.PI, true);
+            ctx2.closePath();
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fill();
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.stroke();
+            
+            ctx2.beginPath();
+            ctx2.arc(shape.x + squareSize * 3, shape.y + squareSize, shape.radius, 0, 2 * Math.PI, true);
+            ctx2.closePath();
+            ctx2.fillStyle = getRandomColor(colors);
+            ctx2.fill();
+            ctx2.lineWidth = strokeProperties.lineWidth;
+            ctx2.strokeStyle = strokeProperties.strokeStyle;
+            ctx2.stroke();
+        }
+
+
+        /// --- SHAPE 3 FUNCTIONS
+        //Body1 - Rounded Rectangle
+        //Body2 - Rectangle
+        //Body3 - Rectangles 2
+        //Body4 - Rectangles 4
+        //Body5 - Rounded Rectangles 4
+        //Body6 - Rounded Rectangles 2
+
+        function drawBody1(ctx3, canvas3, shape, colors) {
+
+            const cornerRadius = 500;
+            const x = shape.x;
+            const y = shape.y;
+            const width = shape.width;
+            const height = shape.height;
+            const topRadius = Math.min(cornerRadius, height);
+            const leftX = x + topRadius;
+            const rightX = x + width - topRadius;
+            ctx3.beginPath();
+            ctx3.moveTo(leftX, y);
+            ctx3.lineTo(rightX, y);
+            ctx3.arcTo(x + width, y, x + width, y + height, topRadius);
+            ctx3.lineTo(x + width, y + height);
+            ctx3.lineTo(x, y + height);
+            ctx3.arcTo(x, y, leftX, y, topRadius);
+            ctx3.closePath();
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fill();
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            ctx3.stroke();
+        }
+
+        function drawBody2(ctx3, canvas3, shape, colors) {
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x, shape.y, squareSize * 4, squareSize);
+            ctx3.strokeRect(shape.x, shape.y, squareSize * 4, squareSize);
+        }
+
+        function drawBody3(ctx3, canvas3, shape, colors) {
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x, shape.y, squareSize * 2, squareSize);
+            ctx3.strokeRect(shape.x, shape.y, squareSize * 2, squareSize);
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize * 2, shape.y, squareSize * 2, squareSize);
+            ctx3.strokeRect(shape.x + squareSize * 2, shape.y, squareSize * 2, squareSize);
+        }
+
+        function drawBody4(ctx3, canvas3, shape, colors) {
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x, shape.y, squareSize, squareSize);
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize * 3, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x + squareSize * 3, shape.y, squareSize, squareSize);
+        }
+
+        function drawBody5(ctx3, canvas3, shape, colors) {
+            const centerX = shape.x + squareSize * 3; 
+            const centerY = shape.y + squareSize;
+            const radius = squareSize;
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize * 2, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x+ squareSize * 2, shape.y, squareSize, squareSize);
+            
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fillRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+            ctx3.strokeRect(shape.x + squareSize, shape.y, squareSize, squareSize);
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.beginPath();
+            ctx3.arc(centerX, centerY, radius, - Math.PI / 2, 0);
+            ctx3.lineTo(shape.x + squareSize * 3, shape.y + squareSize);
+            ctx3.closePath();
+            ctx3.fill();
+            ctx3.stroke();
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.beginPath();
+            ctx3.arc(shape.x + squareSize, centerY, radius, Math.PI, - Math.PI / 2);
+            ctx3.lineTo(shape.x + squareSize, shape.y + squareSize);
+            ctx3.closePath();
+            ctx3.fill();
+            ctx3.stroke();
+        }
+
+        function drawBody6(ctx3, canvas3, shape, colors) {
+            const radius = squareSize;
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.beginPath();
+            ctx3.arc(shape.x + squareSize * 3, shape.y + squareSize, radius, - Math.PI / 2, 0);
+            ctx3.lineTo(shape.x + squareSize * 2, shape.y + squareSize);
+            ctx3.lineTo(shape.x + squareSize * 2, shape.y);
+            ctx3.closePath();
+            ctx3.fill();
+            ctx3.stroke();
+
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.beginPath();
+            ctx3.arc(shape.x + squareSize, shape.y + squareSize, radius, Math.PI, - Math.PI / 2);
+            ctx3.lineTo(shape.x + squareSize * 2, shape.y);
+            ctx3.lineTo(shape.x + squareSize * 2, shape.y + squareSize);
+            ctx3.closePath();
+            ctx3.fill();
+            ctx3.stroke();
+        }
+
+        function drawBody7(ctx3, canvas3, shape, colors) {
+            ctx3.beginPath();
+            ctx3.arc(shape.x + squareSize, shape.y + squareSize, shape.radius, 0, 2 * Math.PI, true);
+            ctx3.closePath();
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fill();
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            ctx3.stroke();
+
+            ctx3.beginPath();
+            ctx3.arc(shape.x + squareSize * 3, shape.y + squareSize, shape.radius, 0, 2 * Math.PI, true);
+            ctx3.closePath();
+            ctx3.fillStyle = getRandomColor(colors);
+            ctx3.fill();
+            ctx3.lineWidth = strokeProperties.lineWidth;
+            ctx3.strokeStyle = strokeProperties.strokeStyle;
+            ctx3.stroke();
+            
+        }
+
+        // --- DRAW FUNCTIONS
+        function drawBackground(bgCtx, bgCanvas, colors, strokeProperties) {
+            const backgrounds = [
+                { type: 'Background', drawFunctions: [drawBackground0] }
+            ];
+            const selectedBackground = backgrounds.find(b => b.type === 'Background');
+            if (selectedBackground) {
+                const randomIndex = Math.floor(Math.random() * selectedBackground.drawFunctions.length);
+                const selectedDrawFunction = selectedBackground.drawFunctions[randomIndex];
+                selectedDrawFunction(bgCtx, bgCanvas, colors, strokeProperties);
+            }
+        }
+
+        function drawShape1(ctx1, canvas1, shape, colors, strokeProperties) {
+            const shapes1 = [
+                { type: 'Eyes', drawFunctions: [drawEye1, drawEye2, drawEye3, drawEye4, drawEye5, drawEye6, drawEye7] },
+            ];
+            const selectedShape = shapes1.find(s => s.type === shape.type);
+            if (selectedShape) {
+                const randomIndex = Math.floor(Math.random() * selectedShape.drawFunctions.length);
+                const selectedDrawFunction = selectedShape.drawFunctions[randomIndex];
+                selectedDrawFunction(ctx1, canvas1, shape, colors, strokeProperties);
+            }
+        }
+
+        function drawShape2(ctx2, canvas2, shape, colors, strokeProperties) {
+            const shapes2 = [
+                { type: 'Mouth', drawFunctions: [drawMouth1, drawMouth2, drawMouth3, drawMouth4, drawMouth5, drawMouth6, drawMouth7] },
+            ];
+            const selectedShape = shapes2.find(s => s.type === shape.type);
+            if (selectedShape) {
+                const randomIndex = Math.floor(Math.random() * selectedShape.drawFunctions.length);
+                const selectedDrawFunction = selectedShape.drawFunctions[randomIndex];
+                selectedDrawFunction(ctx2, canvas2, shape, colors, strokeProperties);
+            }
+        }
+
+        function drawShape3(ctx3, canvas3, shape, colors, strokeProperties) {
+            const shapes3 = [
+                { type: 'Body', drawFunctions: [drawBody1, drawBody2, drawBody3, drawBody4, drawBody5, drawBody6, drawBody7] },
+            ];
+            const selectedShape = shapes3.find(s => s.type === shape.type);
+            if (selectedShape) {
+                const randomIndex = Math.floor(Math.random() * selectedShape.drawFunctions.length);
+                const selectedDrawFunction = selectedShape.drawFunctions[randomIndex];
+                selectedDrawFunction(ctx3, canvas3, shape, colors, strokeProperties);
+            }
+        }
+
+        // --- BUTTONS
+        document.getElementById('randomize-button').addEventListener('click', () => {
+            ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+            ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+            ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
+
+            const randomColors = colors[Math.floor(Math.random() * colors.length)];
+
+            drawBackground(bgCtx, bgCanvas, randomColors, strokeProperties);
+
+            shapes1.forEach((shape) => {
+                drawShape1(ctx1, canvas1, shape, randomColors, strokeProperties);
+            });
+            shapes2.forEach((shape) => {
+                drawShape2(ctx2, canvas2, shape, randomColors, strokeProperties);
+            });
+            shapes3.forEach((shape) => {
+                drawShape3(ctx3, canvas3, shape, randomColors, strokeProperties);
+            });
+        });
+
+        document.getElementById('shape1').addEventListener('click', () => {
+            ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+            
+            const randomColors = colors[Math.floor(Math.random() * colors.length)];
+            
+            shapes1.forEach((shape) => {
+            drawShape1(ctx1, canvas1, shape, randomColors, strokeProperties);
+            });
+        });
+
+        document.getElementById('shape2').addEventListener('click', () => {
+            ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+
+            const randomColors = colors[Math.floor(Math.random() * colors.length)];
+
+            shapes2.forEach((shape) => {
+                drawShape2(ctx2, canvas2, shape, randomColors, strokeProperties);
+            });
+        });
+
+        document.getElementById('shape3').addEventListener('click', () => {
+            ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
+
+            const randomColors = colors[Math.floor(Math.random() * colors.length)];
+
+            shapes3.forEach((shape) => {
+                drawShape3(ctx3, canvas3, shape, randomColors, strokeProperties);
+            });
+        });
+
+        document.getElementById('btn-bg').addEventListener('click', () => {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            const randomColors = colors[Math.floor(Math.random() * colors.length)];
+            
+            backgrounds.forEach((shape) => {
+            drawBackground(bgCtx, bgCanvas, randomColors, strokeProperties);
+            });
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => saveImage(canvas1, canvas2, canvas3, bgCanvas));
+
+        function saveImage(canvas1, canvas2, canvas3, bgCanvas) {
+            const combinedCanvas = document.createElement('canvas');
+            const context = combinedCanvas.getContext('2d');
+            combinedCanvas.width = canvas.width;
+            combinedCanvas.height = canvas.height;
+
+            context.drawImage(bgCanvas, 0, 0, combinedCanvas.width, combinedCanvas.height);
+            context.drawImage(canvas, 0, 0, combinedCanvas.width, combinedCanvas.height);
+            context.drawImage(canvas1, 0, 0, combinedCanvas.width, combinedCanvas.height);
+            context.drawImage(canvas2, 0, 0, combinedCanvas.width, combinedCanvas.height);
+            context.drawImage(canvas3, 0, 0, combinedCanvas.width, combinedCanvas.height);
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = combinedCanvas.toDataURL('image/png');
+            downloadLink.download = 'Opepen.png';
+            downloadLink.click();
+        };
+
+    </script>
+</body>
